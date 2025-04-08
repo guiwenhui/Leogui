@@ -15,35 +15,41 @@ class StudentController extends Controller
         $students = Team::all();
         return view('admin.students.index', compact('students'));
     }
+    //新增学生界面
+    public function create()
+    {
+        return view('admin.students.create');
+    }
 
     public function store(Request $request)
-    {
-        Log::info('收到的请求数据:', $request->all());
-        //dd($request->all()); // 直接输出请求数据，方便调试
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:team,email',
-            'age' => 'required|integer|min:1',
-            'area' => ['required', Rule::in(['西安','上海','香港','成都'])],
+{
+    Log::info('收到的请求数据:', $request->all());
+
+    $validatedData = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:team,email',
+        'age' => 'required|integer|min:1',
+        'area' => ['required', Rule::in(['西安','上海','香港','成都'])],
+    ]);
+
+    try {
+        $student = Team::create($validatedData); // 创建记录并赋值
+
+        // 返回 JSON 响应
+        return response()->json([
+            'success' => true,
+            'message' => '学生添加成功！',
+            'data' => $student,
         ]);
+    } catch (\Exception $e) {
+        Log::error('数据库错误:', ['error' => $e->getMessage()]);
 
-        try {
-            Team::create($validatedData);
-            if ($inserted) {
-                echo "<script>alert('录入成功！'); window.location.href='http://student-management/admin/dashboard.blade.php';</script>";
-            } else {
-                echo "<script>alert('添加失败');</script>";
-            }
-        } catch (\Exception $e) {
-            Log::error('数据库错误:', ['error' => $e->getMessage()]);
-
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => '操作失败: ' . $e->getMessage()], 500);
-            }
-
-            return redirect()->back()->withErrors(['message' => '操作失败: ' . $e->getMessage()]);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => '操作失败: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function destroy($id)
 {
@@ -64,7 +70,8 @@ class StudentController extends Controller
         return response()->json(['success' => false, 'message' => '删除失败: ' . $e->getMessage()]);
     }
 }
-public function update(Request $request, $id)
+    //更新学生
+    public function update(Request $request, $id)
 {
     Log::info('更新学生 ID: ' . $id);
     

@@ -324,6 +324,16 @@ return [
             'text' => '学生管理',
             'url'  => 'admin/students',
             'icon' => 'fas fa-user-graduate',
+            'submenu' => [
+                [
+                    'text' => '学生列表',
+                    'url'  => 'admin/students', // 学生列表的URL
+                ],
+                [
+                    'text' => '新增学生',
+                    'url'  => 'admin/students/create', // 新增学生的URL
+                ],
+            ],
         ],
         ['header' => 'labels'],
         [

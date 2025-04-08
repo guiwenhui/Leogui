@@ -8,10 +8,7 @@
 
 @section('content')
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">List</h3>
-            <button class="btn btn-primary float-right" data-toggle="modal" data-target="#addStudentModal">新增学生</button>
-        </div>
+
         <div class="card-body">
             @if(session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>

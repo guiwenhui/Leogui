@@ -19,6 +19,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     
     // 使用资源路由处理后台学生管理操作（包括 index, create, store, edit, update, destroy）
     Route::resource('students', StudentController::class)->except(['show']);
+    
+    // 获取地区分布数据
+    Route::get('/students/area-distribution', [StudentController::class, 'getAreaDistribution'])->name('students.area-distribution');
+    
+    // 地区分布页面
+    Route::get('/students/area-distribution-page', [StudentController::class, 'areaDistribution'])->name('students.area-distribution-page');
 });
 
 // 普通学生页面路由

@@ -9,7 +9,11 @@ class Team extends Model
 {
     use HasFactory;
 
-    protected $table = 'team'; // 显式指定表名
+    protected $table = 'team';
     protected $fillable = ['name', 'email', 'age', 'area'];
-    public $timestamps = false;
+    public $timestamps = true;
+    
+    protected $casts = [
+        'age' => 'integer',
+    ];
 }

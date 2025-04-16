@@ -34,7 +34,29 @@
         <div class="col-md-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">学生列表</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">学生列表</h5>
+                        <div class="d-flex">
+                            <div class="input-group me-2">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" id="searchInput" class="form-control border-start-0" placeholder="搜索学生...">
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-filter"></i> 筛选
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdown">
+                                    <li><a class="dropdown-item filter-option" href="#" data-area="all">全部地区</a></li>
+                                    <li><a class="dropdown-item filter-option" href="#" data-area="西安">西安</a></li>
+                                    <li><a class="dropdown-item filter-option" href="#" data-area="上海">上海</a></li>
+                                    <li><a class="dropdown-item filter-option" href="#" data-area="香港">香港</a></li>
+                                    <li><a class="dropdown-item filter-option" href="#" data-area="成都">成都</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     @if(session('success'))
@@ -45,20 +67,20 @@
                     @endif
                     
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="studentsTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th>ID</th>
-                                    <th>姓名</th>
-                                    <th>邮箱</th>
-                                    <th>年龄</th>
-                                    <th>地区</th>
+                                    <th class="sortable" data-sort="id">ID <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="name">姓名 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="email">邮箱 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="age">年龄 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="area">地区 <i class="fas fa-sort"></i></th>
                                     <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($students as $student)
-                                    <tr id="student-row-{{ $student->id }}">
+                                    <tr id="student-row-{{ $student->id }}" data-area="{{ $student->area }}">
                                         <td>{{ $student->id }}</td>
                                         <td>{{ $student->name }}</td>
                                         <td>{{ $student->email }}</td>
@@ -67,17 +89,42 @@
                                             <span class="badge bg-info">{{ $student->area }}</span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-warning btn-sm edit-student" data-id="{{ $student->id }}" data-name="{{ $student->name }}" data-email="{{ $student->email }}" data-age="{{ $student->age }}" data-area="{{ $student->area }}">
-                                                <i class="fas fa-edit"></i> 修改
-                                            </button>
-                                            <button class="btn btn-danger btn-sm delete-student" data-id="{{ $student->id }}">
-                                                <i class="fas fa-trash"></i> 删除
-                                            </button>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-warning btn-sm edit-student" data-id="{{ $student->id }}" data-name="{{ $student->name }}" data-email="{{ $student->email }}" data-age="{{ $student->age }}" data-area="{{ $student->area }}">
+                                                    <i class="fas fa-edit"></i> 修改
+                                                </button>
+                                                <button class="btn btn-danger btn-sm delete-student" data-id="{{ $student->id }}">
+                                                    <i class="fas fa-trash"></i> 删除
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            共 <span id="totalCount">{{ count($students) }}</span> 条记录
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination mb-0">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -209,8 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/x-www-form-urlencoded'
+                            'Accept': 'application/json'
                         }
                     })
                     .then(response => response.json())
@@ -224,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 timer: 1500
                             }).then(() => {
                                 document.getElementById(`student-row-${studentId}`).remove();
+                                updateTotalCount();
                             });
                         } else {
                             Swal.fire({
@@ -281,8 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Accept': 'application/json'
             },
             body: new URLSearchParams(formData).toString()
         })
@@ -315,6 +361,105 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+    
+    // 搜索功能
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('keyup', function() {
+        const searchValue = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#studentsTable tbody tr');
+        
+        rows.forEach(row => {
+            const name = row.cells[1].textContent.toLowerCase();
+            const email = row.cells[2].textContent.toLowerCase();
+            const area = row.cells[4].textContent.toLowerCase();
+            
+            if (name.includes(searchValue) || email.includes(searchValue) || area.includes(searchValue)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        updateTotalCount();
+    });
+    
+    // 地区筛选功能
+    document.querySelectorAll('.filter-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            const area = this.getAttribute('data-area');
+            const rows = document.querySelectorAll('#studentsTable tbody tr');
+            
+            rows.forEach(row => {
+                if (area === 'all' || row.getAttribute('data-area') === area) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            updateTotalCount();
+        });
+    });
+    
+    // 排序功能
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', function() {
+            const sortBy = this.getAttribute('data-sort');
+            const rows = Array.from(document.querySelectorAll('#studentsTable tbody tr'));
+            const isAsc = this.classList.contains('asc');
+            
+            // 重置所有排序图标
+            document.querySelectorAll('.sortable i').forEach(icon => {
+                icon.className = 'fas fa-sort';
+            });
+            
+            // 设置当前排序图标
+            this.querySelector('i').className = isAsc ? 'fas fa-sort-down' : 'fas fa-sort-up';
+            
+            // 切换排序方向
+            this.classList.toggle('asc');
+            
+            // 排序行
+            rows.sort((a, b) => {
+                let aValue = a.cells[getColumnIndex(sortBy)].textContent;
+                let bValue = b.cells[getColumnIndex(sortBy)].textContent;
+                
+                // 处理数字类型
+                if (sortBy === 'id' || sortBy === 'age') {
+                    aValue = parseInt(aValue);
+                    bValue = parseInt(bValue);
+                }
+                
+                if (isAsc) {
+                    return aValue > bValue ? 1 : -1;
+                } else {
+                    return aValue < bValue ? 1 : -1;
+                }
+            });
+            
+            // 重新插入排序后的行
+            const tbody = document.querySelector('#studentsTable tbody');
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+    
+    // 获取列索引
+    function getColumnIndex(sortBy) {
+        const headers = document.querySelectorAll('#studentsTable thead th');
+        for (let i = 0; i < headers.length; i++) {
+            if (headers[i].getAttribute('data-sort') === sortBy) {
+                return i;
+            }
+        }
+        return 0;
+    }
+    
+    // 更新总记录数
+    function updateTotalCount() {
+        const visibleRows = document.querySelectorAll('#studentsTable tbody tr:not([style*="display: none"])');
+        document.getElementById('totalCount').textContent = visibleRows.length;
+    }
 });
 </script>
 @endsection
@@ -360,6 +505,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     .form-control:focus, .form-select:focus {
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    .sortable {
+        cursor: pointer;
+    }
+    .sortable:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    .pagination .page-link {
+        border-radius: 5px;
+        margin: 0 2px;
+    }
+    .btn-group {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
     }
 </style>
 @endsection

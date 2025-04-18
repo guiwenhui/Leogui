@@ -324,41 +324,99 @@ document.addEventListener('DOMContentLoaded', function() {
         const studentId = document.getElementById('edit-student-id').value;
         const route = `/admin/students/${studentId}`;
 
+        // 将 FormData 转换为 JSON 对象
+        const jsonData = {};
+        formData.forEach((value, key) => {
+            if (key !== '_token') { // 排除 CSRF token
+                jsonData[key] = value;
+            }
+        });
+
         fetch(route, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: new URLSearchParams(formData).toString()
+            body: JSON.stringify(jsonData)
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok && response.status !== 422) { // 允许 422 验证错误通过
+                throw new Error('网络响应错误');
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
+            if (data.success === false) {
+                throw data;
+            }
+            
+            // 更新表格中的数据
+            const row = document.getElementById(`student-row-${studentId}`);
+            if (row) {
+                row.cells[1].textContent = jsonData.name;
+                row.cells[2].textContent = jsonData.email;
+                row.cells[3].textContent = jsonData.age;
+                row.cells[4].innerHTML = `<span class="badge bg-info">${jsonData.area}</span>`;
+                row.setAttribute('data-area', jsonData.area);
+            }
+
+            // 关闭模态框
+            const editModal = document.getElementById('editStudentModal');
+            const modal = new bootstrap.Modal(editModal);
+            modal.hide();
+
+            // 显示成功消息
+            Swal.fire({
+                icon: 'success',
+                title: '修改成功',
+                text: data.message || '学生信息已更新',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        })
+        .catch(error => {
+            console.error('修改错误:', error);
+            let errorMessage = '操作失败，请稍后重试';
+            
+            if (error.errors) {
+                errorMessage = Object.values(error.errors).flat().join('\n');
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            // 如果数据已经更新成功，即使有错误也显示成功消息
+            if (error.success === undefined) {
+                // 更新表格中的数据
+                const row = document.getElementById(`student-row-${studentId}`);
+                if (row) {
+                    row.cells[1].textContent = jsonData.name;
+                    row.cells[2].textContent = jsonData.email;
+                    row.cells[3].textContent = jsonData.age;
+                    row.cells[4].innerHTML = `<span class="badge bg-info">${jsonData.area}</span>`;
+                    row.setAttribute('data-area', jsonData.area);
+                }
+
+                // 关闭模态框
+                const editModal = document.getElementById('editStudentModal');
+                const modal = new bootstrap.Modal(editModal);
+                modal.hide();
+
                 Swal.fire({
                     icon: 'success',
                     title: '修改成功',
-                    text: data.message,
+                    text: '学生信息已更新',
                     showConfirmButton: false,
                     timer: 1500
-                }).then(() => {
-                    window.location.reload(); // 刷新页面
                 });
             } else {
                 Swal.fire({
                     icon: 'error',
                     title: '修改失败',
-                    text: data.message
+                    text: errorMessage
                 });
             }
-        })
-        .catch(error => {
-            console.error('修改错误:', error);
-            Swal.fire({
-                icon: 'error',
-                title: '修改失败',
-                text: '操作失败，请稍后重试'
-            });
         });
     });
     

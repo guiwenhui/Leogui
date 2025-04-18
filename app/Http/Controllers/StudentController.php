@@ -90,23 +90,49 @@ class StudentController extends Controller
     //更新学生
     public function update(Request $request, $id)
     {
-        Log::info('更新学生 ID: ' . $id);
+        Log::info('更新学生信息请求:', ['id' => $id, 'data' => $request->all()]);
         
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:team,email,' . $id, // 排除当前学生
-            'age' => 'required|integer|min:1',
-            'area' => ['required', Rule::in(['西安', '上海', '香港', '成都'])],
-        ]);
-
         try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => ['required', 'email', Rule::unique('team', 'email')->ignore($id)],
+                'age' => 'required|integer|min:1',
+                'area' => ['required', Rule::in(['西安', '上海', '香港', '成都'])],
+            ], [
+                'name.required' => '姓名不能为空',
+                'name.max' => '姓名不能超过255个字符',
+                'email.required' => '邮箱不能为空',
+                'email.email' => '邮箱格式不正确',
+                'email.unique' => '该邮箱已被其他学生使用',
+                'age.required' => '年龄不能为空',
+                'age.integer' => '年龄必须是整数',
+                'age.min' => '年龄必须大于0',
+                'area.required' => '地区不能为空',
+                'area.in' => '请选择有效的地区'
+            ]);
+
             $student = Team::findOrFail($id);
             $student->update($validatedData);
 
-            return response()->json(['success' => true, 'message' => '修改成功！']);
+            Log::info('学生信息更新成功:', ['id' => $id, 'data' => $validatedData]);
+            return response()->json([
+                'success' => true,
+                'message' => '学生信息修改成功！',
+                'data' => $student
+            ]);
+        } catch (ValidationException $e) {
+            Log::error('验证错误:', ['errors' => $e->errors()]);
+            return response()->json([
+                'success' => false,
+                'message' => '验证失败',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            Log::error('修改失败:', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => '修改失败: ' . $e->getMessage()]);
+            Log::error('更新失败:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => '修改失败: ' . $e->getMessage()
+            ], 500);
         }
     }
 
